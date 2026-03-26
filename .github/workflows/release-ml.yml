@@ -1,0 +1,35 @@
+name: Release ML Model
+
+on:
+  release:
+    types: [published] # Se déclenche quand tu crées une release
+  workflow_dispatch:      # Permet de le lancer manuellement pour tester
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install scikit-learn pandas numpy
+
+      - name: Train and Export Model
+        run: python export_model.py # Remplace par le nom de ton script
+
+      - name: Upload Model to Release
+        uses: softprops/action-gh-release@v1
+        if: github.event_name == 'release'
+        with:
+          files: |
+            model.pkl
+            metrics.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
