@@ -19,7 +19,7 @@ except FileNotFoundError:
 
 # --- 2. PRÉPARATION DES VARIABLES (Tes colonnes exactes) ---
 X = df["Consumer Claim"]
-y = df["Tag_clean"]
+y = df["Tag"]
 
 # Séparation 80/20 avec ton option stratify
 X_train, X_test, y_train, y_test = train_test_split(

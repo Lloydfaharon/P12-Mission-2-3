@@ -1,3 +1,6 @@
-scikit-learn
+fastapi
+uvicorn
 pandas
 numpy
+scikit-learn
+pydantic
