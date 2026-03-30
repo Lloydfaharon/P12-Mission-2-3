@@ -17,7 +17,7 @@ except FileNotFoundError:
     print("❌ Erreur : Le fichier 'ZenAssist_Dataset_1000_Clean.csv' est introuvable à la racine.")
     exit(1)
 
-# --- 2. PRÉPARATION DES VARIABLES (Tes colonnes exactes) ---
+# --- 2. PRÉPARATION DES VARIABLES ---
 X = df["Consumer Claim"]
 y = df["Tag"]
 
@@ -26,7 +26,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-# --- 3. PREPROCESSING (Tes cellules) ---
+# --- 3. PREPROCESSING ---
 le = LabelEncoder()
 y_train_encoded = le.fit_transform(y_train)
 y_test_encoded = le.transform(y_test)
