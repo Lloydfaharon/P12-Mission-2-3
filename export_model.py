@@ -2,84 +2,139 @@ import pandas as pd
 import numpy as np
 import pickle
 import json
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score
 
-# --- 1. CHARGEMENT DU GROS DATASET ---
+# ==========================================
+# 1. CHARGEMENT
+# ==========================================
 try:
     df_raw = pd.read_csv('ZenAssist_Dataset_20000_Clean.csv')
-    # Sécurité : on enlève les lignes sans texte
-    df_raw = df_raw.dropna(subset=['Consumer Claim'])
-    print(f"📖 Fichier brut chargé : {len(df_raw)} lignes.")
+    df_raw = df_raw.dropna(subset=['Consumer Claim', 'Tag'])
+    print(f"📖 Fichier chargé : {len(df_raw)} lignes.")
 except FileNotFoundError:
-    print("❌ Erreur : Le fichier 'ZenAssist_Dataset_20000_Clean.csv' est introuvable.")
+    print("❌ Erreur : Fichier CSV introuvable.")
     exit(1)
 
-# --- 2. LE MAPPING (Unification des catégories) ---
+# ==========================================
+# 2. MAPPING (aligné site + corrigé)
+# ==========================================
 mapping = {
-    "Credit reporting, credit repair services, or other personal consumer reports": "Credit card or prepaid card",
-    "Credit card": "Credit card or prepaid card",
-    "Credit card or prepaid card": "Credit card or prepaid card",
-    "Debt collection": "Debt collection",
-    "Mortgage": "Mortgage",
-    "Vehicle loan or lease": "Vehicle loan or lease",
-    "Student loan": "Consumer Loan",
-    "Payday loan, title loan, or personal loan": "Consumer Loan",
-    "Checking or savings account": "Consumer Loan",
-    "Bank account or service": "Consumer Loan",
-    "Money transfer, virtual currency, or money service": "Money transfer, virtual currency, or money service",
-    "Money transfers": "Money transfers"
+    "Debt collection": "DEBT COLLECTION",
+    "Consumer Loan": "CONSUMER LOAN",
+
+    # CREDIT CARD
+    "Credit card": "CREDIT CARD OR PREPAID CARD",
+    "Credit card or prepaid card": "CREDIT CARD OR PREPAID CARD",
+    "Prepaid card": "CREDIT CARD OR PREPAID CARD",
+
+    # MORTGAGE
+    "Mortgage": "MORTGAGE",
+
+    # VEHICLE
+    "Vehicle loan or lease": "VEHICLE LOAN OR LEASE",
+
+    # STUDENT
+    "Student loan": "STUDENT LOAN",
+
+    # PAYDAY
+    "Payday loan, title loan, or personal loan": "PAYDAY LOAN, TITLE LOAN, OR PERSONAL LOAN",
+    "Payday loan": "PAYDAY LOAN, TITLE LOAN, OR PERSONAL LOAN",
+
+    # BANKING
+    "Checking or savings account": "CHECKING OR SAVINGS ACCOUNT",
+    "Bank account or service": "BANK ACCOUNT OR SERVICE",
+
+    # MONEY TRANSFER
+    "Money transfer, virtual currency, or money service": "MONEY TRANSFER, VIRTUAL CURRENCY, OR MONEY SERVICE",
+    "Virtual currency": "MONEY TRANSFER, VIRTUAL CURRENCY, OR MONEY SERVICE",
+
+    # OTHER
+    "Money transfers": "MONEY TRANSFERS",
+    "Other financial service": "OTHER FINANCIAL SERVICES",
+
+    # FIX IMPORTANT
+    "Credit reporting": "OTHER FINANCIAL SERVICES",
+    "Credit reporting, credit repair services, or other personal consumer reports": "OTHER FINANCIAL SERVICES"
 }
 
-df_raw['Tag'] = df_raw['Tag'].map(mapping).fillna("Other (TO BE UPDATED)")
+df_raw['Tag'] = df_raw['Tag'].map(mapping).fillna("OTHER FINANCIAL SERVICES")
 
-# --- 3. ÉQUILIBRAGE AUTOMATIQUE (Undersampling) ---
-# On fixe la limite à 300 lignes par catégorie pour être parfaitement équitable
-n_par_classe = 300 
+print("\n📊 Distribution des classes après mapping :")
+print(df_raw['Tag'].value_counts())
 
-df = df_raw.groupby('Tag', group_keys=False).apply(
-    lambda x: x.sample(n=min(len(x), n_par_classe), random_state=42)
-).reset_index(drop=True)
+# ==========================================
+# 3. DATASET (on garde toute la data)
+# ==========================================
+df = df_raw.copy()
 
-print(f"⚖️ Dataset équilibré : {len(df)} lignes au total (environ {n_par_classe} par classe).")
-print(df['Tag'].value_counts())
-
-# --- 4. PRÉPARATION DES VARIABLES ---
+# ==========================================
+# 4. SPLIT
+# ==========================================
 X = df["Consumer Claim"]
 y = df["Tag"]
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
 )
 
-# --- 5. PREPROCESSING ---
+# ==========================================
+# 5. ENCODING
+# ==========================================
 le = LabelEncoder()
 y_train_encoded = le.fit_transform(y_train)
 y_test_encoded = le.transform(y_test)
 
-tfidf = TfidfVectorizer(max_features=5000, stop_words='english')
+# ==========================================
+# 6. TF-IDF (optimisé)
+# ==========================================
+tfidf = TfidfVectorizer(
+    max_features=10000,
+    stop_words='english',
+    ngram_range=(1, 2),   # 🔥 très important
+    min_df=3,
+    max_df=0.9
+)
+
 X_train_tfidf = tfidf.fit_transform(X_train)
 X_test_tfidf = tfidf.transform(X_test)
 
-# --- 6. ENTRAÎNEMENT ---
-model_rf = RandomForestClassifier(
-    n_estimators=200, 
-    n_jobs=-1, 
+# ==========================================
+# 7. RANDOM FOREST (optimisé)
+# ==========================================
+model = RandomForestClassifier(
+    n_estimators=300,          # + d’arbres = mieux
+    max_depth=None,            # laisse apprendre librement
+    min_samples_split=2,
+    min_samples_leaf=1,
+    max_features="sqrt",       # important pour texte
+    class_weight="balanced",   # 🔥 gère le déséquilibre
+    n_jobs=-1,
     random_state=42
 )
-model_rf.fit(X_train_tfidf, y_train_encoded)
 
-# --- 7. CALCUL DES MÉTRIQUES ---
-y_pred = model_rf.predict(X_test_tfidf)
+model.fit(X_train_tfidf, y_train_encoded)
+
+# ==========================================
+# 8. ÉVALUATION
+# ==========================================
+y_pred = model.predict(X_test_tfidf)
+
 acc = accuracy_score(y_test_encoded, y_pred)
-f1 = f1_score(y_test_encoded, y_pred, average='weighted', zero_division=0)
+f1 = f1_score(y_test_encoded, y_pred, average='weighted')
 
-# --- 8. EXPORTATION ---
+# ==========================================
+# 9. EXPORT MODÈLE
+# ==========================================
 model_package = {
-    'model': model_rf,
+    'model': model,
     'tfidf': tfidf,
     'le': le
 }
@@ -87,14 +142,23 @@ model_package = {
 with open('model.pkl', 'wb') as f:
     pickle.dump(model_package, f)
 
+# ==========================================
+# 10. EXPORT MÉTRIQUES
+# ==========================================
 metrics = {
     'accuracy': round(acc * 100, 2),
     'f1_score': round(f1 * 100, 2),
-    'model_type': 'Random Forest Balanced',
+    'model_type': 'Random Forest + TF-IDF (12 classes)',
     'samples_used': len(df)
 }
 
 with open('metrics.json', 'w') as f:
     json.dump(metrics, f)
 
-print(f"🚀 Terminé ! model.pkl (F1: {metrics['f1_score']}%) généré avec succès.")
+# ==========================================
+# 11. RÉSULTATS
+# ==========================================
+print("\n🚀 Entraînement terminé !")
+print(f"📊 Accuracy: {metrics['accuracy']}%")
+print(f"🎯 F1-Score: {metrics['f1_score']}%")
+print("📂 model.pkl et metrics.json générés avec succès.")
