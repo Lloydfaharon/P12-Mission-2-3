@@ -35,8 +35,13 @@ tfidf = TfidfVectorizer(max_features=5000, stop_words='english')
 X_train_tfidf = tfidf.fit_transform(X_train)
 X_test_tfidf = tfidf.transform(X_test)
 
-# --- 4. ENTRAÎNEMENT (Le gagnant : Random Forest) ---
-model_rf = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
+# --- 4. ENTRAÎNEMENT (Le gagnant : Random Forest avec correction de poids) ---
+model_rf = RandomForestClassifier(
+    n_estimators=100, 
+    n_jobs=-1, 
+    random_state=42, 
+    class_weight='balanced_subsample'
+)
 model_rf.fit(X_train_tfidf, y_train_encoded)
 
 # --- 5. CALCUL DES MÉTRIQUES ---
