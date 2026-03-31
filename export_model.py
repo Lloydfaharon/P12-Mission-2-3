@@ -24,40 +24,47 @@ except FileNotFoundError:
 # 2. MAPPING (aligné site + corrigé)
 # ==========================================
 mapping = {
+    # 1. DEBT COLLECTION
     "Debt collection": "DEBT COLLECTION",
+    
+    # 2. CONSUMER LOAN
     "Consumer Loan": "CONSUMER LOAN",
-
-    # CREDIT CARD
+    
+    # 3. CREDIT CARD OR PREPAID CARD
     "Credit card": "CREDIT CARD OR PREPAID CARD",
     "Credit card or prepaid card": "CREDIT CARD OR PREPAID CARD",
     "Prepaid card": "CREDIT CARD OR PREPAID CARD",
-
-    # MORTGAGE
+    
+    # 4. MORTGAGE
     "Mortgage": "MORTGAGE",
-
-    # VEHICLE
+    
+    # 5. VEHICLE LOAN OR LEASE
     "Vehicle loan or lease": "VEHICLE LOAN OR LEASE",
-
-    # STUDENT
+    
+    # 6. STUDENT LOAN
     "Student loan": "STUDENT LOAN",
-
-    # PAYDAY
+    
+    # 7. PAYDAY LOAN, TITLE LOAN, OR PERSONAL LOAN
     "Payday loan, title loan, or personal loan": "PAYDAY LOAN, TITLE LOAN, OR PERSONAL LOAN",
     "Payday loan": "PAYDAY LOAN, TITLE LOAN, OR PERSONAL LOAN",
-
-    # BANKING
+    
+    # 8. CHECKING OR SAVINGS ACCOUNT
     "Checking or savings account": "CHECKING OR SAVINGS ACCOUNT",
+    
+    # 9. BANK ACCOUNT OR SERVICE
     "Bank account or service": "BANK ACCOUNT OR SERVICE",
-
-    # MONEY TRANSFER
+    
+    # 10. MONEY TRANSFER, VIRTUAL CURRENCY, OR MONEY SERVICE
     "Money transfer, virtual currency, or money service": "MONEY TRANSFER, VIRTUAL CURRENCY, OR MONEY SERVICE",
     "Virtual currency": "MONEY TRANSFER, VIRTUAL CURRENCY, OR MONEY SERVICE",
-
-    # OTHER
+    
+    # 11. MONEY TRANSFERS
     "Money transfers": "MONEY TRANSFERS",
+    
+    # 12. OTHER FINANCIAL SERVICES
     "Other financial service": "OTHER FINANCIAL SERVICES",
-
-    # FIX IMPORTANT
+    
+    # 🔥 FIX IMPORTANT
     "Credit reporting": "OTHER FINANCIAL SERVICES",
     "Credit reporting, credit repair services, or other personal consumer reports": "OTHER FINANCIAL SERVICES"
 }
@@ -96,11 +103,11 @@ y_test_encoded = le.transform(y_test)
 # 6. TF-IDF (optimisé)
 # ==========================================
 tfidf = TfidfVectorizer(
-    max_features=10000,
+    max_features=3000,  
     stop_words='english',
-    ngram_range=(1, 2),   # 🔥 très important
-    min_df=3,
-    max_df=0.9
+    ngram_range=(1, 2),
+    min_df=5,               
+    max_df=0.8
 )
 
 X_train_tfidf = tfidf.fit_transform(X_train)
@@ -110,12 +117,10 @@ X_test_tfidf = tfidf.transform(X_test)
 # 7. RANDOM FOREST (optimisé)
 # ==========================================
 model = RandomForestClassifier(
-    n_estimators=300,          # + d’arbres = mieux
-    max_depth=None,            # laisse apprendre librement
-    min_samples_split=2,
-    min_samples_leaf=1,
-    max_features="sqrt",       # important pour texte
-    class_weight="balanced",   # 🔥 gère le déséquilibre
+    n_estimators=80,         # Réduit de 300 à 80
+    max_depth=25,            # Limite la profondeur des arbres
+    min_samples_leaf=2,
+    class_weight="balanced",
     n_jobs=-1,
     random_state=42
 )
@@ -140,7 +145,7 @@ model_package = {
 }
 
 with open('model.pkl', 'wb') as f:
-    pickle.dump(model_package, f)
+    pickle.dump(model_package, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 # ==========================================
 # 10. EXPORT MÉTRIQUES
