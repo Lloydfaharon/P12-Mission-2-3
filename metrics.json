@@ -1,1 +1,1 @@
-{"accuracy": 78.53, "f1_score": 78.7, "model_type": "Random Forest + TF-IDF (12 classes)", "samples_used": 20000}
+{"accuracy": 81.81, "f1_score": 81.19, "samples_used": 7175}
