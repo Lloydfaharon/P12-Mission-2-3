@@ -2,9 +2,8 @@ name: Release ML Model
 
 on:
   release:
-    types: [published] # Se déclenche quand tu crées une release
-  workflow_dispatch:      # Permet de le lancer manuellement pour tester
-
+    types: [published]
+  workflow_dispatch:      
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
@@ -25,7 +24,7 @@ jobs:
           pip install scikit-learn pandas numpy
 
       - name: Train and Export Model
-        run: python export_model.py # Remplace par le nom de ton script
+        run: python export_model.py
 
       - name: Upload Model to Release
         uses: softprops/action-gh-release@v1
